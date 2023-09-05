@@ -23,6 +23,9 @@ const configSchema = {
     corsHeaders: loader.string('SERVER_CORS_ALLOW_HEADERS'),
     corsOrigins: loader.string('SERVER_CORS_ALLOW_ORIGINS'),
   },
+  my_vars: {
+    riddleAnswer: loader.string('RIDDLE_ANSWER')
+  }
 }
 
 export default values(configSchema)
