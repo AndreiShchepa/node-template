@@ -59,7 +59,7 @@ export const service = (
   pipeMiddleware(createAppMessage(), async (req, res, next) => {
     try {
       const responseBody = await serviceHandler(getAppMessage())
-      res.json(responseBody)
+      res.status(responseBody!.status ?? 200).json(responseBody)
     } catch (error) {
       next(error)
     }

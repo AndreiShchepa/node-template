@@ -2,8 +2,12 @@ import { createServer } from 'unicore'
 import { ctrl } from './app/controllers'
 import logger from './app/logger'
 import * as hello from './app/services/helloService'
+import { 
+  addProblemHandler,
+  createUserHandler
+} from './app/services/problems'
 import { createTables } from './app/database/tables'
-import { uniqueId } from 'lodash'
+import { initializeDbMethods } from './app/database/db_functions'
 
 const sqlite3 = require('sqlite3').verbose()
 const path_to_db = ':memory:'
@@ -13,10 +17,9 @@ export const db = new sqlite3.Database(path_to_db, (err: Error | null) => {
     process.exit(1)
   } else {
     console.log('Database opened successfully')
+    initializeDbMethods(db)
     createTables()
   }
-
-  return void 0
 })
 
 const server = createServer()
@@ -27,6 +30,8 @@ server.all('/', ctrl.httpRootHandler)
 server.use(ctrl.healthz)
 
 server.all('/hello', ctrl.service(hello.hello))
+server.post('/signup', ctrl.service(createUserHandler))
+server.post('/problems', ctrl.service(addProblemHandler))
 
 server.use(ctrl.httpErrorHandler)
 server.use(ctrl.httpFinalHandler)
