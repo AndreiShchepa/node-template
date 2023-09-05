@@ -2,6 +2,7 @@ import config from '../config'
 import { E_CODE, ServerError } from '../app/errors'
 import { t } from './testing'
 
+// helpers for tests
 const createProblem = (type: string, problemText: string) => { return { type: type, problemText: problemText } }
 const createPostAddProblem = (auth: string, problems: any) => { return { authorization: auth, problems: problems } }
 const createUser = (token1: string, token2: any) => { return { authorization: token2, res: { token1: token1, token2: token2 } } }
@@ -9,6 +10,8 @@ const createPatchUpdateProblem = (auth: string, problems: any) => { return { aut
 const updateProblem = (id: number, newType: string, newProblemText: string) => { return { id: id, newType: newType, newProblemText: newProblemText } }
 const createDeleteProblem = (auth: string, ids: any) => { return { authorization: auth, ids: ids } }
 const createGetProblem = (auth: string, filters: any, answer: any) => { return { authorization: auth, filters: filters, answer: answer } }
+const createPostAnswerProblem = (auth: string, answers: any) => { return { authorization: auth, answers: answers } }  
+const answerProblem = (id: number, answer: string) => { return { id: id, answer: answer} }
 
 describe('Template (System)', () => {
   test('Configuration is loaded', () => {
@@ -188,6 +191,47 @@ describe('Template (System)', () => {
           .then(({ body }: any) => {
             expect(body).toEqual({
               status: 202,
+              res: "Success"
+            });
+          });
+        }  
+      }
+    }),
+    test('Answer to 1 expression and 1 riddle', async () => {
+      const data = [
+        createPostAnswerProblem(
+          "Basic U_ivan", 
+          [
+            answerProblem(1, "4"),
+            answerProblem(4, config.my_vars.riddleAnswer)
+          ]
+        ),
+        createPostAnswerProblem(
+          "Basic U_andrei", 
+          [
+            answerProblem(6, "5"),
+            answerProblem(8, config.my_vars.riddleAnswer)
+          ]
+        ),
+        createPostAnswerProblem(
+          "Basic U_sasa", 
+          [
+            answerProblem(10, "0"),
+            answerProblem(11, config.my_vars.riddleAnswer)
+          ]
+        ),
+      ]
+
+      for (let user of data) {
+        for (let answer of user.answers) {
+          await t.request()
+          .post(`/problems/${answer.id}`)
+          .set('Authorization', user.authorization)
+          .send({ answer: answer.answer })
+          .expect(200)
+          .then(({ body }: any) => {
+            expect(body).toEqual({
+              status: 200,
               res: "Success"
             });
           });
