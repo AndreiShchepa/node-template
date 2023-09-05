@@ -101,3 +101,28 @@ export interface ProblemsDelete {
     requestBody: {};
   };
 };
+
+export interface ProblemsGet {
+  get: {
+    parameters: {
+      header: {
+        authorization: string;
+      };
+      path: {
+        id: string;
+      };
+      query: {
+        typeProblem: string;
+        solved: string;
+      };
+    }
+    responses: {
+      content: {
+        "application/json": {
+          [key: string]: any | void;
+        };
+      };
+    };
+    requestBody: {};
+  };
+};

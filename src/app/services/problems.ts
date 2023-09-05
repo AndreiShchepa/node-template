@@ -3,6 +3,7 @@ import {
   ProblemsPost,
   ProblemsDelete,
   ProblemsPatch,
+  ProblemsGet,
   UsersPost
 } from '../../openapi/interfaces'
 import config from '../../config'
@@ -11,7 +12,9 @@ import {
   addUser,
   addProblem,
   deleteProblem,
-  updateProblem
+  updateProblem,
+  getAllProblems,
+  getOneProblem
 } from '../database/db_functions'
 import * as openapi from '../../openapi'
 import { parseAndEvaluate } from '../eval_expr'
@@ -126,4 +129,44 @@ export const updateProblemHandler = async (): Promise<openapi.OpenAPIResponse<Pr
 
   await updateProblem(message.user, message.param.id, message.requestBody.newProblemText, answer, message.param.newType)
   return {status: 202, res: "Success"}
+}
+
+/**
+ * Handles fetching a single problem through a GET request.
+ * 
+ * Validates the request parameters, and calls the `getOneProblem` function 
+ * to retrieve the problem from the database.
+ * 
+ * @returns {Promise<openapi.OpenAPIResponse<ProblemsGet>>} 
+ * 
+ * @throws {Object}
+ */
+export const getProblemHandler = async (): Promise<openapi.OpenAPIResponse<ProblemsGet>> => {
+  const message = ctrl.getOasPathAppMessage<ProblemsGet>();
+  checkRequest(!message.param || !message.param.id || typeof message.param.id !== 'string')
+  return await getOneProblem(message.param.id)
+}
+
+/**
+ * Handles fetching all problems through a GET request.
+ * 
+ * Validates the request parameters, and calls the `getAllProblems` function
+ * to retrieve the problems from the database based on the provided filters.
+ * 
+ * @returns {Promise<openapi.OpenAPIResponse<ProblemsGet>>} 
+ * 
+ * @throws {Object}
+ */
+export const getAllProblemsHandler = async (): Promise<openapi.OpenAPIResponse<ProblemsGet>> => {
+  const message = ctrl.getOasPathAppMessage<ProblemsGet>()
+
+  if (message.param.typeProblem && !['expression', 'riddle'].includes(message.param.typeProblem)) {
+    return {status: 400, res: `Error! Wrong type of the problem (${message.param.typeProblem})!`}
+  }
+
+  if (message.param.solved && !['true', 'false'].includes(message.param.solved)) {
+    return {status: 400, res: `Error! Wrong filter (${message.param.solved})! Required "true" or "false".`}
+  }
+
+  return await getAllProblems(message.param.typeProblem, message.param.solved, message.user)
 }

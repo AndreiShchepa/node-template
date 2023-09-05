@@ -147,3 +147,62 @@ export const updateProblem = async (
     throw err.message ? CustomError(err.message) : err
   }
 }
+
+/**
+ * Retrieve a single problem by its ID.
+ * 
+ * @async
+ * @function
+ * @param {string} problemId - The ID of the problem to be retrieved.
+ * 
+ * @returns {Promise<{ 'id': number, 'text': string }>} - A Promise that resolves to an object containing the problem's ID and text.
+ * 
+ * @throws {CustomError} Throws a CustomError with status code 404 if the problem ID is incorrect or if no problem is found.
+ * @throws {Error} Throws a generic Error for other exceptions.
+ */
+export const getOneProblem = async (problemId: string): Promise<{ 'id': number, 'text': string }> => {
+  try {
+    const problem = await getProblem(problemId)
+    if (!problem) { throw CustomError('Error! Incorrect id of problem!', 404) }
+    return { 'id': problem.id, 'text': problem.text }
+  } catch (err) {
+    throw err.message ? CustomError(err.message) : err
+  }
+}
+
+/**
+ * Retrieve a list of problems based on various filters: problem type, whether it's solved or not, and username.
+ * 
+ * @async
+ * @function
+ * @param {string} typeProblem - The type/category of problem to retrieve. Optional.
+ * @param {string} solved - A string flag to indicate if solved problems should be included ("true") or excluded ("false").
+ * @param {string} username - The username of the person whose problems are to be fetched. 
+ * 
+ * @returns {Promise<ProblemModel[] | null>} - A Promise that resolves to an array of ProblemModel objects or null if none are found.
+ * 
+ * @throws {CustomError} Throws a CustomError if there are issues during the query or if no user is found.
+ * @throws {Error} Throws a generic Error for other exceptions.
+ */
+export const getAllProblems = async (typeProblem: string, solved: string, username: string) : Promise<{ 'id': number, 'text': string }[]> => { 
+  try {
+    const user = await getUser(username)
+    let finalStmt = "select problems.id, problems.text from problems"
+    
+    // Append additional SQL query conditions based on the parameters
+    if (user && solved) {
+      let solved_text = solved === "true" ? `where solved.user_id = ${user.id}` 
+                                          : `and solved.user_id = ${user.id} where solved.user_id is NULL`
+      finalStmt += ` left join solved on problems.id = solved.problem_id ${solved_text}`
+      if (typeProblem) { finalStmt += ` and problems.type = "${typeProblem}"` }
+    }
+    else if (typeProblem) {
+      finalStmt += ` where type = "${typeProblem}"`
+    }
+    
+    return dbAllAsync(finalStmt)
+  }
+  catch(err) {
+    throw err.message ? CustomError(err.message) : err
+  }
+}
