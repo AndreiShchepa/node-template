@@ -4,7 +4,9 @@ import logger from './app/logger'
 import * as hello from './app/services/helloService'
 import { 
   addProblemHandler,
-  createUserHandler
+  createUserHandler,
+  deleteProblemHandler,
+  updateProblemHandler
 } from './app/services/problems'
 import { createTables } from './app/database/tables'
 import { initializeDbMethods } from './app/database/db_functions'
@@ -32,6 +34,8 @@ server.use(ctrl.healthz)
 server.all('/hello', ctrl.service(hello.hello))
 server.post('/signup', ctrl.service(createUserHandler))
 server.post('/problems', ctrl.service(addProblemHandler))
+server.delete('/problems/:id', ctrl.service(deleteProblemHandler))
+server.patch('/problems/:id', ctrl.service(updateProblemHandler))
 
 server.use(ctrl.httpErrorHandler)
 server.use(ctrl.httpFinalHandler)

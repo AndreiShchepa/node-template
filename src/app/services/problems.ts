@@ -1,13 +1,17 @@
 import { ctrl } from '../controllers'
 import { 
   ProblemsPost,
+  ProblemsDelete,
+  ProblemsPatch,
   UsersPost
 } from '../../openapi/interfaces'
 import config from '../../config'
 const md5 = require('md5')
 import { 
   addUser,
-  addProblem
+  addProblem,
+  deleteProblem,
+  updateProblem
 } from '../database/db_functions'
 import * as openapi from '../../openapi'
 import { parseAndEvaluate } from '../eval_expr'
@@ -74,4 +78,52 @@ export const addProblemHandler = async (): Promise<openapi.OpenAPIResponse<Probl
 
   await addProblem(message.user, message.requestBody.problemText, answer, message.param.type)
   return {status: 201, res: 'Success'}
+}
+
+/**
+ * Handles deleting a problem through a DELETE request.
+ * 
+ * Validates the request and parameters, checks authorization,
+ * and calls the `deleteProblem` function to remove the problem from the database.
+ *
+ * @returns {Promise<openapi.OpenAPIResponse<ProblemsDelete>>}
+ * @throws {Object}
+ */
+export const deleteProblemHandler = async (): Promise<openapi.OpenAPIResponse<ProblemsDelete>> => {
+  const message = ctrl.getOasPathAppMessage<ProblemsDelete>();
+
+  checkAuthorization(message.user)
+  checkRequest(!message.param || typeof message.param.id !== 'string')
+
+  await deleteProblem(message.user, message.param.id)
+  return {status: 204, res: 'Success'}
+}
+
+/**
+ * Handles updating a problem through a PATCH request.
+ * 
+ * Validates the request and parameters, checks authorization, 
+ * and calls the `updateProblem` function to update the problem in the database.
+ * 
+ * @returns {Promise<openapi.OpenAPIResponse<ProblemsPatch>>}
+ * @throws {Object}
+ */
+export const updateProblemHandler = async (): Promise<openapi.OpenAPIResponse<ProblemsPatch>> => {
+  const message = ctrl.getOasPathAppMessage<ProblemsPatch>();
+
+  checkAuthorization(message.user)
+  checkRequest(!message.param || typeof message.param.id !== 'string' || !message.requestBody 
+               || typeof message.requestBody.newProblemText !== 'string')
+
+  let answer: string | null = config.my_vars.riddleAnswer
+  if (message.param.newType == 'expression') {
+    answer = parseAndEvaluate(message.requestBody.newProblemText)?.toString() ?? null
+    if (answer === null) return {status: 400, res: `Error! Wrong expression (${message.requestBody.newProblemText})!`}
+  }
+  else if (message.param.newType !== 'riddle') {
+    return {status: 400, res: `Error! Wrong type of the problem (${message.param.newType})!`}
+  }
+
+  await updateProblem(message.user, message.param.id, message.requestBody.newProblemText, answer, message.param.newType)
+  return {status: 202, res: "Success"}
 }

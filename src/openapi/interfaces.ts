@@ -48,3 +48,56 @@ export interface ProblemsPost {
 		};
 	};
 };
+
+export interface ProblemsPatch {
+  patch: {
+    parameters: {
+      header: {
+        authorization: string;
+      };
+      path: {
+        id: string;
+      };
+      query: {
+        newType: string;
+      };
+    };
+    responses: {
+      content: {
+        "application/json": {
+          status: number;
+          res: string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          newProblemText: string;
+        };
+      };
+    };
+  };
+};
+
+export interface ProblemsDelete {
+  delete: {
+    parameters: {
+      header: {
+        authorization: string;
+      };
+      path: {
+        id: string;
+      };
+    }; 
+    responses: {
+      content: {
+        "application/json": {
+          status: number;
+          res: string;
+        };
+      };
+    };
+    requestBody: {};
+  };
+};
