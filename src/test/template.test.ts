@@ -8,6 +8,7 @@ const createUser = (token1: string, token2: any) => { return { authorization: to
 const createPatchUpdateProblem = (auth: string, problems: any) => { return { authorization: auth, problems: problems } }
 const updateProblem = (id: number, newType: string, newProblemText: string) => { return { id: id, newType: newType, newProblemText: newProblemText } }
 const createDeleteProblem = (auth: string, ids: any) => { return { authorization: auth, ids: ids } }
+const createGetProblem = (auth: string, filters: any, answer: any) => { return { authorization: auth, filters: filters, answer: answer } }
 
 describe('Template (System)', () => {
   test('Configuration is loaded', () => {
@@ -193,6 +194,29 @@ describe('Template (System)', () => {
         }  
       }
     }),
+    test('Get all problems', async () => {
+      const expected_data = [
+        {"id": 1, "text": "1- (10/5)* 2 +7"},
+        {"id": 2, "text": "6 + 6+ 6"},
+        {"id": 3, "text": "Updated riddle Andrei"},
+        {"id": 4, "text": "2 Test riddle from Andrei"},
+        {"id": 5, "text": "6 - 6 - 6"},
+        {"id": 6, "text": "1+4"},
+        {"id": 7, "text": "Updated riddle Sasa"},
+        {"id": 8, "text": "2 Test riddle from Sasa"},
+        {"id": 9, "text": "1 + 3 * 3 + 7 - (2 - 6)"},
+        {"id": 10, "text": "9+1-10*2+10 + 0 * 4"},
+        {"id": 11, "text": "1 Test riddle from Ivan"},
+        {"id": 12, "text": "Updated riddle Ivan"},
+      ]
+
+      await t.request()
+      .get(`/problems`)
+      .expect(200)
+      .then(({ body }: any) => {        
+        expect(body).toEqual(expected_data);
+      });
+    }),
     test('Delete problems', async () => {
       const data = [
         createDeleteProblem(
@@ -219,6 +243,34 @@ describe('Template (System)', () => {
           });
         }  
       }
-    })
+    }),
+    test('Get the problem with filters', async () => {
+      const data = [
+        createGetProblem(
+          "Basic U_andrei", 
+          {type: "riddle", solved: "true"},
+          [{"id": 8, "text": "2 Test riddle from Sasa"}]
+        )
+      ]
+
+      for (let user of data) {
+        await t.request()
+        .get(`/problems`)
+        .query({typeProblem: user.filters.typeProblem, solved: user.filters.solved})
+        .set('Authorization', user.authorization)
+        .expect(200)
+        .then(({ body }: any) => {
+          expect(body).toEqual(user.answer)
+        });
+      }  
+    }),
+    test('Get problems without any filters', () => {
+      return t.request()
+        .get('/problems')
+        .expect(200)
+        .then(({ body }: any) => {
+          expect(Array.isArray(body)).toBe(true);
+        });
+    });
   })
 })
