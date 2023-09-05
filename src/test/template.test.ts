@@ -316,5 +316,213 @@ describe('Template (System)', () => {
           expect(Array.isArray(body)).toBe(true);
         });
     });
-  })
+  }),
+  describe('Problems wrong requests', () => {
+    describe('POST /problems', () => {
+      test('User is not authorized', () => {
+        return t.request()
+          .post('/problems')
+          .expect(404) 
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Unauthorized');
+          });
+      });
+      test('Type is not a string', () => {
+        return t.request()
+          .post('/problems')
+          .set('Authorization', 'Basic U_andrei')
+          .query({ type: 123 /* Invalid type */ })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Bad request. Check documentation for sending requests correctly');
+          });
+      });
+      test('ProblemText is not a string', () => {
+        return t.request()
+          .post('/problems')
+          .set('Authorization', 'Basic U_andrei')
+          .query({ type: 'expression'})
+          .send({problemText: 123 /* Invalid problemText */ })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Bad request. Check documentation for sending requests correctly');
+          });
+      });
+      test('Type is not "expression" or "riddle"', () => {
+        return t.request()
+          .post('/problems')
+          .set('Authorization', 'Basic U_andrei')
+          .query({ type: 'invalid_type'})
+          .send({problemText: 'some text'})
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong type of the problem (invalid_type)!');
+          });
+      });
+      test('Expression has wrong format', () => {
+        return t.request()
+          .post('/problems')
+          .set('Authorization', 'Basic U_andrei')
+          .query({type: 'expression'})
+          .send({problemText: 'aaa' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong expression (aaa)!');
+          });
+      });
+    }),
+    describe('DELETE /problems/:id', () => {
+      test('User is not authorized', () => {
+        return t.request()
+          .delete('/problems/1')
+          .expect(404)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Unauthorized');
+          });
+      });
+      test('User or problem not found', () => {
+        return t.request()
+          .delete('/problems/2')
+          .set('Authorization', 'Basic U_andrei')
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('User or problem not found');
+          });
+      });
+      test('User is not the owner of the problem', () => {
+        return t.request()
+          .delete('/problems/7')
+          .set('Authorization', 'Basic U_andrei')
+          .expect(403)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('You can only delete problems you added!');
+          });
+      });
+    }),
+    describe('PATCH /problems/:id', () => {
+      test('User is not authorized', () => {
+        return t.request()
+          .patch('/problems/1')
+          .expect(404)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Unauthorized');
+          });
+      });
+      test('Bad request', () => {
+        return t.request()
+          .patch('/problems/123')
+          .set('Authorization', 'Basic U_someUser')
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Bad request. Check documentation for sending requests correctly');
+          });
+      });
+      test('Wrong expression', () => {
+        return t.request()
+          .patch('/problems/someId')
+          .set('Authorization', 'Basic U_someUser')
+          .query({ newType: 'expression' })
+          .send({ newProblemText: 'wrong expression' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong expression (wrong expression)!');
+          });
+      });
+      test('Wrong problem type', () => {
+        return t.request()
+          .patch('/problems/someId')
+          .set('Authorization', 'Basic U_someUser')
+          .query({ newType: 'wrongType' })
+          .send({ newProblemText: 'some text' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong type of the problem (wrongType)!');
+          });
+      });
+      test('User is not the owner of the problem', () => {
+        return t.request()
+          .patch('/problems/7')
+          .set('Authorization', 'Basic U_andrei')
+          .query({ newType: 'riddle' })
+          .send({ newProblemText: 'new expression' })
+          .expect(403)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('You can only update problems you added!');
+          });
+      });
+    }),
+    describe('GET /problems', () => {
+      // Test for invalid problem type
+      test('Wrong problem type', () => {
+        return t.request()
+          .get('/problems')
+          .query({ typeProblem: 'wrongType' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong type of the problem (wrongType)!');
+          });
+      });
+    
+      // Test for invalid solved filter
+      test('Wrong solved filter', () => {
+        return t.request()
+          .get('/problems')
+          .query({ solved: 'wrongValue' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('Error! Wrong filter (wrongValue)! Required "true" or "false".');
+          });
+      });
+    }),
+    describe('POST /problems/:id', () => {
+      test('Unauthorized access', () => {
+        return t.request()
+          .post('/problems/1')
+          .expect(404)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Unauthorized');
+          });
+      });
+      test('Invalid problem ID type', () => {
+        return t.request()
+          .post('/problems/123')
+          .set('Authorization', 'Basic U_andrei')
+          .send({})
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Bad request. Check documentation for sending requests correctly');
+          });
+      });
+      test('Invalid answer type', () => {
+        return t.request()
+          .post('/problems/1')
+          .set('Authorization', 'Basic U_andrei')
+          .send({ answer: 12345 })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.err).toBe('Bad request. Check documentation for sending requests correctly');
+          });
+      });
+      test('Incorrect answer', () => {
+        return t.request()
+          .post('/problems/1')
+          .set('Authorization', 'Basic U_andrei')
+          .send({ answer: '12' })
+          .expect(400)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('The answer is incorrect!');
+          });
+      });
+      test('User or answer not found', () => {
+        return t.request()
+          .post('/problems/1')
+          .set('Authorization', 'Basic U_unknown')
+          .send({ answer: 'someAnswer' })
+          .expect(404)
+          .then(({ body }: any) => {
+            expect(body.res).toBe('User or answer not found');
+          });
+      });
+    });
+  });
 })
