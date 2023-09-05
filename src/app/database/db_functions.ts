@@ -50,6 +50,7 @@ export const addUser = async (username: string, password: string) => {
  */
 export const getProblem = (problemId: string) => fetchFromDB<ProblemModel>('SELECT * FROM problems WHERE id = ?', [problemId])
 export const getUser = (username: string) => fetchFromDB<UserModel>('SELECT * FROM users WHERE username = ?', [username])
+export const getAnswer = (problemId: string) => fetchFromDB<AnswerModel>('SELECT answer FROM answers WHERE problem_id = ?', [problemId])
 
 /**
  * Add a problem to the database.
@@ -203,6 +204,35 @@ export const getAllProblems = async (typeProblem: string, solved: string, userna
     return dbAllAsync(finalStmt)
   }
   catch(err) {
+    throw err.message ? CustomError(err.message) : err
+  }
+}
+
+/**
+ * Answer a specific problem and store the result in the database.
+ * 
+ * @async
+ * @function
+ * @param {string} username - The username of the person attempting to answer the problem.
+ * @param {string} problemId - The unique identifier of the problem to be answered.
+ * @param {string} userAnswer - The answer provided by the user.
+ * @returns {Promise<void>}
+ * 
+ * @throws {CustomError} Throws a CustomError if the user or answer is not found, or if the answer is incorrect.
+ * @throws {Error} Throws a generic Error if any other exception occurs.
+ */
+export const answerProblem = async (username: string, problemId: string, userAnswer: string): Promise<void> => {
+  try {
+    const [user, answer] = await Promise.all([
+      getUser(username),
+      getAnswer(problemId)
+    ]);
+
+    if (!user || !answer) { throw CustomError('User or answer not found', 404) }
+    if (userAnswer !== answer.answer) { throw CustomError('The answer is incorrect!') }
+
+    await dbRunAsync('INSERT INTO solved (user_id, problem_id) VALUES (?, ?)', [user.id, problemId]);
+  } catch (err) {
     throw err.message ? CustomError(err.message) : err
   }
 }

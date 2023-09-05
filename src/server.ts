@@ -8,7 +8,8 @@ import {
   deleteProblemHandler,
   updateProblemHandler,
   getAllProblemsHandler,
-  getProblemHandler
+  getProblemHandler,
+  answerProblemHandler
 } from './app/services/problems'
 import { createTables } from './app/database/tables'
 import { initializeDbMethods } from './app/database/db_functions'
@@ -34,9 +35,11 @@ server.all('/', ctrl.httpRootHandler)
 server.use(ctrl.healthz)
 
 server.all('/hello', ctrl.service(hello.hello))
-server.get('/problems', ctrl.service(getAllProblemsHandler))
-server.get('/problems/:id', ctrl.service(getProblemHandler))
+
 server.post('/signup', ctrl.service(createUserHandler))
+server.get('/problems/:id', ctrl.service(getProblemHandler))
+server.get('/problems', ctrl.service(getAllProblemsHandler))
+server.post('/problems/:id', ctrl.service(answerProblemHandler))
 server.post('/problems', ctrl.service(addProblemHandler))
 server.delete('/problems/:id', ctrl.service(deleteProblemHandler))
 server.patch('/problems/:id', ctrl.service(updateProblemHandler))

@@ -14,7 +14,8 @@ import {
   deleteProblem,
   updateProblem,
   getAllProblems,
-  getOneProblem
+  getOneProblem,
+  answerProblem
 } from '../database/db_functions'
 import * as openapi from '../../openapi'
 import { parseAndEvaluate } from '../eval_expr'
@@ -169,4 +170,25 @@ export const getAllProblemsHandler = async (): Promise<openapi.OpenAPIResponse<P
   }
 
   return await getAllProblems(message.param.typeProblem, message.param.solved, message.user)
+}
+
+/**
+ * Handles the answering of a problem via a POST request.
+ *
+ * Validates the request parameters and body, checks for authorization, 
+ * and then calls the `answerProblem` function to record the answer.
+ * 
+ * @returns {Promise<openapi.OpenAPIResponse<ProblemsPost>>} 
+ * 
+ * @throws {Object}
+ */
+export const answerProblemHandler = async (): Promise<openapi.OpenAPIResponse<ProblemsPost>> => {
+  const message = ctrl.getOasPathAppMessage<ProblemsPost>()
+
+  checkAuthorization(message.user)
+  checkRequest(!message.param || typeof message.param.id !== 'string' 
+               || !message.requestBody || typeof message.requestBody.answer !== 'string')
+
+  await answerProblem(message.user, message.param.id, message.requestBody.answer)
+  return {status: 200, res: "Success"}
 }
