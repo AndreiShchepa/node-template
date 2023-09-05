@@ -5,6 +5,9 @@ import { t } from './testing'
 const createProblem = (type: string, problemText: string) => { return { type: type, problemText: problemText } }
 const createPostAddProblem = (auth: string, problems: any) => { return { authorization: auth, problems: problems } }
 const createUser = (token1: string, token2: any) => { return { authorization: token2, res: { token1: token1, token2: token2 } } }
+const createPatchUpdateProblem = (auth: string, problems: any) => { return { authorization: auth, problems: problems } }
+const updateProblem = (id: number, newType: string, newProblemText: string) => { return { id: id, newType: newType, newProblemText: newProblemText } }
+const createDeleteProblem = (auth: string, ids: any) => { return { authorization: auth, ids: ids } }
 
 describe('Template (System)', () => {
   test('Configuration is loaded', () => {
@@ -144,6 +147,75 @@ describe('Template (System)', () => {
               status: 201,
               res: "Success"
             });
+          });
+        }  
+      }
+    }),
+    test('Update 1 riddle and 1 expression for each user', async () => {
+      const data = [
+        createPatchUpdateProblem(
+          "Basic U_andrei", 
+          [
+            updateProblem(2, "expression", "6 + 6+ 6"),
+            updateProblem(3, "riddle", "Updated riddle Andrei"),
+          ]
+        ),
+        createPatchUpdateProblem(
+          "Basic U_sasa", 
+          [
+            updateProblem(5, "expression", "6 - 6 - 6"),
+            updateProblem(7, "riddle", "Updated riddle Sasa"),
+          ]
+        ),
+        createPatchUpdateProblem(
+          "Basic U_ivan", 
+          [
+            updateProblem(9, "expression", "1 + 3 * 3 + 7 - (2 - 6)"),
+            updateProblem(12, "riddle", "Updated riddle Ivan"),
+          ]
+        ),
+      ]
+
+      for (let user of data) {
+        for (let problem of user.problems) {
+          await t.request()
+          .patch(`/problems/${problem.id}`)
+          .set('Authorization', user.authorization)
+          .query({ newType: problem.newType })
+          .send({ newProblemText: problem.newProblemText })
+          .expect(202)
+          .then(({ body }: any) => {
+            expect(body).toEqual({
+              status: 202,
+              res: "Success"
+            });
+          });
+        }  
+      }
+    }),
+    test('Delete problems', async () => {
+      const data = [
+        createDeleteProblem(
+          "Basic U_andrei", 
+          [2]
+        ),
+        createDeleteProblem(
+          "Basic U_sasa", 
+          [5, 6]
+        ),
+        createDeleteProblem(
+          "Basic U_ivan", 
+          [9, 12]
+        ),
+      ]
+
+      for (let user of data) {
+        for (let id of user.ids) {
+          await t.request()
+          .delete(`/problems/${id}`)
+          .set('Authorization', user.authorization)
+          .expect(204)
+          .then(({ body }: any) => {
           });
         }  
       }
